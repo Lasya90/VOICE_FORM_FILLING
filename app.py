@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request, redirect, flash, session
-from werkzeug.security import generate_password_hash, check_password_hash
 import os
+from werkzeug.security import generate_password_hash, check_password_hash
 import whisper
 from googletrans import Translator
 
-# Flask app setup 
+# Flask app setup
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
@@ -13,10 +13,6 @@ model = whisper.load_model("base")
 
 # Translator for multilingual support
 translator = Translator()
-
-# In-memory user store (for demonstration, can be replaced with other storage)
-users = {}  # Format: email -> {user_data}
-submissions = []  # Store form submissions
 
 # Function to sanitize inputs
 def sanitize_input(value):
@@ -28,46 +24,38 @@ def transcribe_speech(audio_path, target_language='en'):
     original_text = result['text']
     
     # Handle specific terms for special characters
-    original_text = original_text.replace(" at ", "@")  # Replace "at" with "@"
-    original_text = original_text.replace(" dot ", ".")  # Replace "dot" with "."
-    
-    # Translate the text if target language is not 'en'
+    # Replace "at" with "@"
+    original_text = original_text.replace(" at ", "@")
+    # Optionally, replace "dot" with "."
+    original_text = original_text.replace(" dot ", ".")
+    # Handle other potential keywords for special characters if needed
+
     if target_language != 'en':
         translated_text = translator.translate(original_text, dest=target_language).text
         return translated_text
     return original_text
 
+
 # Home route
 @app.route('/')
 def home():
     if 'user_id' in session:
-        user = users.get(session['user_id'])
-        return render_template('index.html', user=user)  # Pass user data if logged in
+        return render_template('index.html')  # Pass user data if logged in
     return render_template('index.html')
 
-# Signup Route
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        try:
-            user_name = sanitize_input(request.form['userName'])
-            email = sanitize_input(request.form['email'])
-            password = sanitize_input(request.form['password'])
+        user_name = sanitize_input(request.form['userName'])
+        email = sanitize_input(request.form['email'])
+        password = sanitize_input(request.form['password'])
 
-            # Check if the user already exists
-            if email in users:
-                flash("User already exists. Please log in.", "error")
-                return redirect('/login')
+        # In-memory validation (since database is removed)
+        flash("Signup successful! You can now log in.", "success")
+        return redirect('/login')  # Redirect to the login page after successful signup
 
-            hashed_password = generate_password_hash(password)
-            users[email] = {'username': user_name, 'password_hash': hashed_password}
-            flash("Signup successful! You can now log in.", "success")
-            return redirect('/login')
-        except Exception as e:
-            flash("Signup failed. Please try again.", "error")
     return render_template('login_signup.html')
 
-# Login Route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     # Check if user is already logged in
@@ -79,15 +67,9 @@ def login():
         email = sanitize_input(request.form['email'])
         password = sanitize_input(request.form['password'])
 
-        # Check if the user exists
-        user = users.get(email)
-        if not user:
-            flash("User does not exist. Please sign up first.", "error")
-            return redirect('/signup')
-
-        # Check if the password is correct
-        if check_password_hash(user['password_hash'], password):
-            session['user_id'] = email  # Store email as user_id
+        # In-memory validation (since database is removed)
+        if email == "test@example.com" and password == "password":  # Example credentials
+            session['user_id'] = 1
             flash("Login successful!", "success")
             return redirect('/')
         else:
@@ -95,51 +77,43 @@ def login():
 
     return render_template('login_signup.html')
 
-# Form Filling Route
 @app.route('/form', methods=['GET', 'POST'])
 def form_filling():
     if request.method == 'POST':
         try:
             # Extracting form data
-            form_data = {
-                'first_name': request.form['firstName'],
-                'last_name': request.form['lastName'],
-                'father_name': request.form['fatherName'],
-                'mother_name': request.form['motherName'],
-                'dob': request.form['dob'],
-                'gender': request.form['gender'],
-                'branch': request.form['branch'],
-                'section': request.form['section'],
-                'roll_number': request.form['rollNumber'],
-                'year_of_study': request.form['yearOfStudy'],
-                'percentage': request.form['percentage'],
-                'phone': request.form['phone'],
-                'email': request.form['email'],
-                'blood_group': request.form.get('bloodGroup', ''),
-                'address': request.form['address']
-            }
+            first_name = request.form['firstName']
+            last_name = request.form['lastName']
+            father_name = request.form['fatherName']
+            mother_name = request.form['motherName']
+            dob = request.form['dob']
+            branch = request.form['branch']
+            section = request.form['section']
+            roll_number = request.form['rollNumber']
+            year_of_study = request.form['yearOfStudy']
+            percentage = request.form['percentage']
+            phone = request.form['phone']
+            email = request.form['email']
+            blood_group = request.form.get('bloodGroup', '')
+            address = request.form['address']
 
-            # Store form submission data in the in-memory store
-            submissions.append(form_data)
-
+            # No database save as it has been removed
             flash("Student details submitted successfully!", "success")
             return redirect('/success')
         except Exception as err:
+            print(f"Error: {err}")
             flash("There was an error while submitting the form. Please try again.", "error")
             return redirect('/form')
 
     return render_template('forms.html')
 
-# Success Page Route
 @app.route('/success')
 def success_page():
     return render_template('thnx.html')
 
-# Second Page Route
 @app.route('/secondpg')
 def second_page():
     return render_template('login_signup.html')
 
-# Run the app
 if __name__ == '__main__':
     app.run(debug=True)
