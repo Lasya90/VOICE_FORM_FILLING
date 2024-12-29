@@ -1,12 +1,16 @@
 from flask import Flask, render_template, request, redirect, flash, session
 import os
-from werkzeug.security import generate_password_hash, check_password_hash
 import whisper
+from werkzeug.security import generate_password_hash, check_password_hash
+
 from googletrans import Translator
 
 # Flask app setup
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+
+
+
 
 # Load the Whisper model
 model = whisper.load_model("base")
@@ -117,4 +121,4 @@ def second_page():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(debug=True)
